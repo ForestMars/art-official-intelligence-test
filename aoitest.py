@@ -53,7 +53,7 @@ def insert(name,score):
         db.People.insert_one(
             {
             "name":name,
-            "score":'0'
+            "score":'0',
             "count":'0'
         })
         print '\nCreated new player.\n'
