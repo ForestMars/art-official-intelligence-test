@@ -48,16 +48,22 @@ def random_file(dir):
 #    test_images.append(r)
 
 # Create new player in MongoDB
-def insert(name,score):
+def insert(name,score,count):
+    print '\nCreating new player.\n'
+    print(name)
+    print(count)
+    print(score)
     try:
-        db.People.insert_one(
+        db.PlayerData.insert_one(
             {
             "name":name,
             "score":'0',
             "count":'0'
         })
         print '\nCreated new player.\n'
-
+        print(name)
+        print(count)
+        print("score is", score)
     except Exception, e:
         print str(e)
 
@@ -66,8 +72,9 @@ def insert(name,score):
 def read(name):
     try:
         pplCol = db.PlayerData.find({"name": name})
-        print '\n Loaded player from PlayerData Database \n'
+        print '\n Loaded player from PlayerData Database! \n'
         for ppl in pplCol:
+            print(ppl)
             return ppl
 
     except Exception, e:
@@ -75,6 +82,7 @@ def read(name):
 
 # Update player score.
 def update(name,score,count):
+    print '\n trying to update score \n'
     try:
         name = name
         score = score
@@ -114,7 +122,8 @@ class GetHandler(BaseHTTPRequestHandler):
         self.end_headers()
         args = {}
         idx = self.path.find('?')
-
+        print('idx')
+        print(idx)
         # <--- HTML starts here --->
         x("<html>")
         # <--- HEAD starts here --->
@@ -143,7 +152,7 @@ class GetHandler(BaseHTTPRequestHandler):
             if 'username' in urlparse.parse_qs(parsed.query):
                 name = urlparse.parse_qs(parsed.query)['username'][0]
                 yourName = name # (For new player names)
-                print('getting score for %s</p>' % name)
+                print('getting score for %s' % name)
                 nameScore = read(name)
 
             # Yes, seriously, Python makes this incredibly verbose.
@@ -154,6 +163,7 @@ class GetHandler(BaseHTTPRequestHandler):
             if 'correctanswer' in urlparse.parse_qs(parsed.query):
                 which = urlparse.parse_qs(parsed.query)['correctanswer'][0]
 
+            # This will obviously break if no answer is submitted. 
             if answer == which:
                 thisScore = 1
             else:
@@ -168,11 +178,16 @@ class GetHandler(BaseHTTPRequestHandler):
             # @TODO
             if nameScore:
                 newScore = int(nameScore['score']) + thisScore
+                count = int(nameScore['count']) + 1
                 # Ok, maybe tell them their score as they play...
                 x("<p>Your current score is: %s</p>" % newScore)
                 update(name,newScore,count)
             else:
-                insert(name,thisScore,count)
+                print(read(name))
+                # @TODO: Don't hard code initial count. 
+                insert(name,thisScore,1)
+                x("<p>Your current score is: missing</p>")
+                
 
             # @TODO
             if 'startover' in urlparse.parse_qs(parsed.query):
@@ -185,6 +200,7 @@ class GetHandler(BaseHTTPRequestHandler):
         # Or else it is a new game.
         else:
             count = 0
+            print('Count = 0')
             nameScore = 0  # Sigh.
             rpath = self.path
             print('New Player')
@@ -197,6 +213,7 @@ class GetHandler(BaseHTTPRequestHandler):
         # Pick the next random ai or human image
 
         # count += 1 # No comment.
+        # print(count)
         dirs = ['ai', 'human']
         which = random.choice(dirs)
         dir = 'images/'+which+'/'
@@ -221,7 +238,11 @@ class GetHandler(BaseHTTPRequestHandler):
         x('<div class="form-group">')
         x("<form method='get'>")
         x('Name: <input type="text" name="username" class="form-control" value=%s>' % yourName)
-        x("Your answer: <br/>")
+        Message()
+        x(msg)
+        x("<br/>Your answer: <br/>")
+        
+        # This should be a single radio control, not 2. 
         x('<input type="radio" name="ai" value="ai" class=""> AI')
         x("<br/>")
         x('<input type="radio" name="human" value="human" class=""> Human')
